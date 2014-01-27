@@ -1,0 +1,103 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+{% load splunk_wftoolkit %}
+{% block title %}Transaction Page Response Time{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+    
+<style type="text/css">
+.splunk-toolkit-parcoords{
+    height: 600px;
+    margin: 10px;
+    padding: 3px;
+}
+</style>
+{% endblock css %}
+
+        
+{% block content %}
+
+<div class="dashboard-body container-fluid main-section-body" data-role="main">
+    <div class="row">
+        <div class="span12 dashboard-header clearfix">
+            <h2>Transaction Page Response Time   </h2>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Tranaction Tests</h3>
+                    </div>
+                    <div class="panel-body">
+                    {% radiogroup id="trx-radiogrp" managerid="trx-search" labelField="desc" valueField="mid" default="9009002"%}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Page Response Time</h3>
+                    </div>
+                    <div class="panel-body">
+                    {% parallelcoords id="trxpage" managerid="trxpage-search" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Site Page Response Time</h3>
+                    </div>
+                    <div class="panel-body">
+                    {% parallelcoords id="trxpage2" managerid="trxpage3-search" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content%}
+
+{% block managers %} 
+    {% searchmanager id="trx-search" search="index=gomez earliest=-20d sourcetype=gomez:page:api |  fields desc mid | dedup desc | fields mid desc"
+    preview=False cache=True %}
+    {% searchmanager id="trxpage-search" search="index=gomez sourcetype=gomez:page:api earliest=-25d 9009002 | fields rtime cmtext pseq | eval  page =(pseq +\"_\" + cmtext)| eval rtime=(rtime/1000)| stats avg(rtime) as avg, stdev(rtime) as stdev, perc95(rtime) as perc95 by page | fields page avg stdev perc95"
+    preview=False cache=True autostart=True %}
+    {% searchmanager id="trxpage3-search" search="index=gomez sourcetype=gomez:page:api earliest=-25d 9009002 | fields rtime cmtext pseq site_name | eval  page =(pseq +\"_\" + cmtext)| eval rtime=(rtime/1000)| stats avg(rtime) as avg, stdev(rtime) as stdev, perc95(rtime) as perc95 by page site_name | fields site_name page avg stdev perc95"
+    preview=False cache=True autostart=True %}
+{% endblock managers %}
+
+
+{% block js %}    
+
+<script>
+    require(["splunkjs/ready!"], function(mvc) {
+        var _ = require("underscore");
+        // Fetch a reference to the views and managers
+        var trx = mvc.Components.getInstance("trx-radiogrp");
+        var parrell = mvc.Components.getInstance("trxpage");
+        var defaultNamespace = mvc.Components.getInstance("default"); 
+        
+        // Add "all" choices to
+        trx.on("change", function() {
+            var descString = trx.val()
+            defaultNamespace.set("mid", descString);
+        });
+    });
+</script>
+
+{% endblock js %}

@@ -1,0 +1,58 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Minitor To Site Repsone Avg Reponse Time{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+    <style type="text/css">
+    </style>
+{% endblock css %}
+
+{% block content %}
+<div class="dashboard-body container-fluid main-section-body" data-role="main">
+        <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Count of return status codes by Page</h3>
+                        <div id="chart1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Average count of None 200 object status codes by page</h3>
+                        {% table id="table1" managerid="pagestats-search" pageSize=30%}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content%}
+
+{% block managers %}
+
+        
+    {% searchmanager id="pagestats-search" search='index=_internal | timechart span=1h count as total | appendcols [ search index=_internal (sourcetype=splunk_web_access OR sourcetype=splunkd_access) | timechart span=1h count by sourcetype ] | table _time splunk_web_access splunkd_access total'
+        preview=True cache=500 %}
+
+{% endblock managers %}
+
+{% block js %}  
+{{ block.super }}   
+<script>
+
+</script>
+
+{% endblock js %}

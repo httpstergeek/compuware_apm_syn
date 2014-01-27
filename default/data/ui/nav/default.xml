@@ -1,0 +1,31 @@
+<nav color="294d87">
+    <view name="default" default="true"/>
+    <a href="/dj/redirector/compuware_apm_syn/home">Home</a>
+    <a href="/dj/redirector/compuware_apm_syn/search">Search</a>
+    <a href="/dj/redirector/compuware_apm_syn/gomezoverview">Overview</a>
+    
+    <collection label="Transactions Summaries">
+        <a href="/dj/redirector/compuware_apm_syn/mid2site">Monitor 2 Site Reponse</a>
+        <a href="/dj/redirector/compuware_apm_syn/rtimeheat">Monitor Response Time Calendar</a>
+        <a href="/dj/redirector/compuware_apm_syn/barline">Bar2Line</a>
+    </collection>
+    
+    <collection label="Pages Summaries">
+        <a href="/dj/redirector/compuware_apm_syn/pageinfo">Page Info</a>
+        <a href="/dj/redirector/compuware_apm_syn/page2obj">Page 2 Obj</a>
+        <a href="/dj/redirector/compuware_apm_syn/pageTimes">Page Times</a> 
+    </collection>
+    
+    <collection label="Object Summaries">
+        <a href="/dj/redirector/compuware_apm_syn/objinfo">Obj Info</a>
+        <a href="/dj/redirector/compuware_apm_syn/obj2host">Obj 2 Host</a>
+    </collection>
+    
+    <collection label="Host Summaries">
+        <a href="/dj/redirector/compuware_apm_syn/hostinfo">Host Info</a>
+    </collection>
+    
+    <collection label="Connection Summaries">
+        <a href="/dj/redirector/compuware_apm_syn/conninfo">Connection Info</a>
+    </collection>
+</nav>

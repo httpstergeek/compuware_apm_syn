@@ -1,0 +1,86 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Gomez Test Info{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+{% endblock css %}
+
+{% block content %}
+<div class="dashboard-body container-fluid main-section-body" data-role="main">
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 50%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>% of Trx by Monitor ID</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% chart id="chart1" managerid="simplesearch1" type="pie" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-cell" style="width: 50%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Trx by Monitor ID</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% chart id="chart2" managerid="simplesearch1" type="timechart" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                    </div>
+                    <div class="panel-body">
+                        {% timeline id="timeline1" managerid="simplesearch1" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3># of Synthetic Transactions over Site</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% table id="table1" managerid="simplesearch2" pageSize=30 %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content%}
+
+{% block managers %}
+    {% searchmanager id="simplesearch1" search="index=gomez sourcetype=gomez:txn:api | fields mid | stats count by mid" 
+        preview=True cache=500 status_buckets=300 %}
+        
+    {% searchmanager id="simplesearch2" search="index=gomez sourcetype=gomez:txn:api | fields mid sname | rename sname AS siteName| chart count over siteName by mid " 
+        preview=True cache=500 status_buckets=300 %}
+
+{% endblock managers %}
+
+{% block js %} 
+{{ block.super }}   
+<script>
+    
+</script>
+{% endblock js %}

@@ -1,0 +1,55 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Minitor To Site Repsone Avg Reponse Time{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+    <style type="text/css">
+#mon2site{
+    height: 800px;
+    width: auto;
+}
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div id="monRtimeHeadMap"></div>
+
+{% endblock content%}
+
+{% block managers %}
+
+        
+    {% searchmanager id="simplesearch3" search="index=gomez sourcetype=gomez:txn:api |bucket _time span=1h |fields rtime mid | rename mid as monitorID| timechart span=1d avg(rtime) as response_time by monitorID" 
+        preview=True cache=500 status_buckets=300 %}
+{% endblock managers %}
+
+{% block js %} 
+{{ block.super }}   
+<script>
+    require([ 
+        "splunkjs/ready!", 
+        "jquery",
+        "splunk_wftoolkit/components/calendarheatmap/calendarheatmap",
+    ], 
+    function(mvc, $, parallelcoords) {
+        var calendar = new parallelcoords({
+            'id' : 'monRtimeHeadMap',
+            'managerid' : 'simplesearch3',
+            'domain': 'month',
+            'subDomain': 'x_day',
+            'el' : $('#monRtimeHeadMap'),
+            'options' : {cellSize: 20,
+                         cellPadding: 2,
+                         subDomainTextFormat: "%d",
+                         itemName: ["Response Time"],
+                         legendColors: ["#fcffa3", "#232181"]
+                         }
+        }).render();
+    });
+</script>
+{% endblock js %}

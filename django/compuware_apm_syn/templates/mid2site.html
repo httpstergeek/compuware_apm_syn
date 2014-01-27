@@ -1,0 +1,207 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Minitor To Site Repsone Avg Reponse Time{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+    <style type="text/css">
+#mon2site{
+    height: 900px;
+    width: auto;
+}
+
+        td.icon {
+            text-align: center;
+        }
+
+        td.icon i {
+            font-size: 25px;
+            text-shadow: 1px 1px #aaa;
+        }
+
+        td.icon .severe {
+            color: red;
+        }
+
+        td.icon .elevated {
+            color: orangered;
+        }
+
+        td.icon .low {
+            color: #006400;
+        }
+    </style>
+{% endblock css %}
+
+{% block content %}
+<div class="dashboard-body container-fluid main-section-body" data-role="main">
+
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Average Response by ISP and Region</h3>
+                        <div id="mon2site"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Average Response Time by day</h3>
+                        <div id="mybaar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Average Transaction response Time</h3>
+                        <div id="table-custom"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content%}
+
+{% block managers %}
+
+        
+    {% searchmanager id="simplesearch3" search="index=gomez sourcetype=\"gomez:txn:api\" earliest=-60d | fields rtime mid sname | rename mid as monitorID| rename sname as site| stats avg(rtime) as response_time by monitorID site" 
+        preview=True cache=500 status_buckets=300 %}
+    {% searchmanager id="simplesearch4" search="index=gomez earliest=-60d latest=-20d sourcetype=gomez:page:api 9009002 | bucket _time span=1d | fields rtime mid pseq | rename pseq as page_sec | rename mid as monitorID| eval rtime=(rtime/1000)| timechart span=1d avg(rtime) as response_time by page_sec" 
+        preview=True cache=500 status_buckets=300 %}
+    {% searchmanager id="simplesearch5" search="index=gomez sourcetype=\"gomez:txn:api\" | bucket _time span=1d|fields rtime mid | rename mid as monitorID| eval rtime=(rtime/1000)| stats sparkline(avg(rtime)) as response, avg(rtime), max(rtime), perc95(rtime) by monitorID| rangemap field=response low=0-2 elevated=2.1-4 default=severe" 
+        preview=True cache=500 status_buckets=300 %}
+
+{% endblock managers %}
+
+{% block js %} 
+{{ block.super }}   
+<script>
+    require([ 
+        "splunkjs/ready!", 
+        "jquery",
+        "splunk_wftoolkit/components/sankey/sankey",
+    ], 
+    function(mvc, $, Sankey) {
+        var sankey = new Sankey({
+            'id' : 'mon2site',
+            'managerid' : 'simplesearch3',
+            'el' : $('#mon2site')
+        }).render();
+        s
+    });
+</script>
+<script>
+    var deps = [
+        "splunkjs/ready!",
+        "splunkjs/mvc/chartview"
+    ];
+    require(deps, function(mvc) {
+        var ChartView = require("splunkjs/mvc/chartview");
+
+        // Instantiate components
+        barchart = new ChartView({
+            id: "mybaar",
+            managerid: "simplesearch4",
+            type: "column",
+            "charting.chart.stackMode": "stacked", // Place complex property names within quotes
+            "charting.legend.placement": "bottom",
+            el: $("#mybaar")
+        }).render();
+
+        // Respond to a click event
+        barchart.on("click:chart", function (e) {
+            e.preventDefault(); // Prevent redirecting to the Search app
+            console.log("Clicked chart: ", e); // Print event info to the console
+        });
+
+    });
+</script>
+<script>
+    var deps = [
+        "splunkjs/ready!",
+        "underscore",
+        "splunkjs/mvc/tableview",
+    ];
+    require(deps, function(mvc,_) {
+
+        // Create the customized table
+        var TableView = require("splunkjs/mvc/tableview");
+        var mycustomtable = new TableView({
+            id: "table-custom",
+            managerid: "simplesearch5",
+            el: $("#table-custom"),
+            // Format the sparkline cell
+            format: {
+                "sparkline": [ // This field name is required
+                    {
+                        "type": "sparkline", // This property must be "sparkline"
+
+                        // Sparkline options
+                        "options": 
+                        {
+                            
+                            "height": "40px", 
+                            "barWidth": "5px",
+                            "type": "bar",
+                            "colorMap": 
+                            {
+                                "100:": "#0033CC", 
+                                ":99": "#00FF00"
+                            }
+                        }
+                    }
+                ]
+            }
+        }).render();
+
+        // Define icons for the custom table cell
+        var ICONS = {
+            severe: 'alert-circle',
+            elevated: 'alert',
+            low: 'check-circle'
+        };
+
+        // Use the BaseCellRenderer class to create a custom table cell renderer
+        var CustomIconCellRenderer = TableView.BaseCellRenderer.extend({ 
+            canRender: function(cell) {
+                // This method returns 'true' for the 'range' field
+                return cell.field === 'range';
+            },
+            
+            // This render function only works when canRender returns 'true'
+            render: function($td, cell) {
+                var icon = 'question';
+                if(ICONS.hasOwnProperty(cell.value)) {
+                    icon = ICONS[cell.value];
+                }
+                $td.addClass('icon').html(_.template('<i class="icon-<%-icon%> <%- range %>" title="<%- range %>"></i>', {
+                    icon: icon,
+                    range: cell.value
+                }));
+            }
+        });
+
+        // Use the addCellRenderer method to add the custom cell renderer to the table
+        mycustomtable.table.addCellRenderer(new CustomIconCellRenderer()); 
+        mycustomtable.table.render();    
+
+    });
+</script>
+{% endblock js %}

@@ -1,0 +1,143 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+{% load splunk_wftoolkit %}
+
+{% block title %}{{app_name}}Home Page{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+<style type="text/css">
+.splunk-toolkit-parcoords{
+    height: 600px;
+    margin: 10px;
+    padding: 3px;
+}
+</style>
+{% endblock css %}
+
+
+{% block content %}
+
+<div class="dashboard-body container-fluid main-section-body">
+    <div class="row">
+        <div class="span12 dashboard-header clearfix">
+            <h2>Compuware AMP Synthetic</h2>
+        </div>
+    </div>
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-body">
+                    <p>Here's a brief overview of the Gomez Synthetic Transactions. All Data presented in this Dashboard is pulled directly from the  CompuWare APIs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+   <div class="dashboard-row">
+    {% timerange id="example-timerange" preset="Month to date" managerid="main-search" %}
+        <div class="dashboard-cell" style="width: 33%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Clarisonic Checkout</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% single id="example-single1" managerid="post1" beforeLabel="Avg Response:" classField="range"  %}
+                    </div>
+                    <div class="panel-body">
+                        {% single id="example-single2" managerid="post2" beforeLabel="95th Response:" classField="range"  %}
+                    </div>
+                </div>
+                {% table id="table1" managerid="post7" %}
+            </div>
+        </div>
+        <div class="dashboard-cell" style="width: 33%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Shop - Home page</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% single id="single3" managerid="post3" beforeLabel="Response Time:" classField="range"  %}
+                    </div>
+                    <div class="panel-body">
+                        {% single id="single4" managerid="post4" beforeLabel="Response Time:" classField="range"  %}
+                    </div>
+                </div>
+                {% table id="table2" managerid="post8" %}
+            </div>
+        </div>
+        <div class="dashboard-cell" style="width: 33%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Nordstrom.com</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% single id="single5" managerid="post5" beforeLabel="Response Time:" classField="range"  %}
+                    </div>
+                    <div class="panel-body">
+                        {% single id="single6" managerid="post6" beforeLabel="Response Time:" classField="range"  %}
+                    </div>
+                </div>
+                {% table id="table3" managerid="post9" %}
+            </div> 
+        </div>
+    </div>
+     <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Site Page Response Time</h3>
+                    </div>
+                    <div class="panel-body">
+                    {% parallelcoords id="sitetxn" managerid="sitetxn-search" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+            
+{% endblock content%}
+
+{% block managers %}
+    {% searchmanager id="main-search" 
+        search="index=gomez sourcetype=\"gomez:txn:api\" |  eval rtime=(rtime/1000)| fields mid tpf tos rtime"
+        preview=True cache=500 status_buckets=300 %}
+
+        
+    {% postprocessmanager id="post1" managerid="main-search" search="where mid==\"9009002\"| stats avg(rtime) as avg| rangemap field=avg low=0-19 elevated=19-25 severe=25-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post2" managerid="main-search" search="where mid==\"9009002\"| stats perc95(rtime) as 95th| rangemap field=95th low=0-19 elevated=19-25 severe=25-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post3" managerid="main-search" search="where mid==\"1181422\"| stats avg(rtime) as avg| rangemap field=avg low=0-0.4 elevated=0.4-0.6 severe=0.6-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post4" managerid="main-search" search="where mid==\"1181422\"| stats perc95(rtime) as 95th| rangemap field=95th low=0-0.4 elevated=0.4-0.6 severe=0.6-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post5" managerid="main-search" search="where mid==\"17016427\"| stats avg(rtime) as avg| rangemap field=avg low=0-0.4 elevated=0.4-0.6 severe=0.6-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post6" managerid="main-search" search="where mid==\"17016427\"| stats perc95(rtime) as 95th| rangemap field=95th low=0-0.4 elevated=0.4-0.6 severe=0.6-100 default=severe"
+    preview=True cache=500 status_buckets=300 %}
+
+    {% postprocessmanager id="post7" managerid="main-search" search="where mid==\"9009002\"| stats avg(tpf) as Avg_Page_Failures, avg(tos) as Avg_Object_Failures | table Avg_Page_Failures Avg_Object_Failures"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post8" managerid="main-search" search="where mid==\"1181422\"| stats avg(tpf) as Avg_Page_Failures, avg(tos) as Avg_Object_Failures | table Avg_Page_Failures Avg_Object_Failures"
+    preview=True cache=500 status_buckets=300 %}
+    {% postprocessmanager id="post9" managerid="main-search" search="where mid==\"17016427\"| stats avg(tpf) as Avg_Page_Failures, avg(tos) as Avg_Object_Failures | table Avg_Page_Failures Avg_Object_Failures"
+    preview=True cache=500 status_buckets=300 %}
+    
+    {% searchmanager id="sitetxn-search" search="index=gomez sourcetype=gomez:txn:api | fields rtime desc pseq site_name | eval rtime=(rtime/1000)| stats avg(rtime) as avg, stdev(rtime) as stdev, perc95(rtime) as perc95 by desc site_name | fields site_name desc avg stdev perc95"
+    preview=True autostart=True cache=500 status_buckets=300%}
+
+{% endblock managers %}
+
+{% block js %}    
+    <script>
+    </script>
+{% endblock js %}

@@ -1,0 +1,132 @@
+{% extends "splunkdj:base_with_app_bar.html" %}
+
+{% load splunkmvc %}
+
+{% block title %}Minitor To Site Repsone Avg Reponse Time{% endblock title %}
+
+{% block css %}
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}splunkjs/css/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="{{STATIC_URL}}{{app_name}}/custom.css" />
+    <style type="text/css">
+#page2status{
+    height: 400px;
+    width: auto;
+}
+    </style>
+{% endblock css %}
+
+{% block content %}
+<div class="dashboard-body container-fluid main-section-body" data-role="main">
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Tranaction Tests</h3>
+                    </div>
+                    <div class="panel-body">
+                    {% radiogroup id="trx-radiogrp" managerid="trx-search" labelField="desc" valueField="mid" default="9009002"%}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Count of return status codes by Page</h3>
+                        <div id="page2status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-row">
+        <div class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel">
+                <div class="dashboard-element">
+                    <div class="panel-head">
+                        <h3>Average count of None 200 object status codes by page</h3>
+                    </div>
+                    <div id="mybaar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content%}
+
+{% block managers %}
+
+        
+    {% searchmanager id="simplesearch3" search="index=gomez earliest=-40d sourcetype=gomez:object:api 9009002 | bucket _time span=1h| fields rc pseq |stats count by rc, pseq| eval rc=tonumber(rc) |where rc<590" 
+        preview=True cache=500 status_buckets=300 %}
+    {% searchmanager id="simplesearch4" search="index=gomez sourcetype=gomez:page:api earliest=-40d 9009002| bucket _time span=1d |fields pseq rc300 rc400 rc500 | rename pseq as page_sec | timechart span=1d avg(rc300) as #_300_stats , avg(rc400) as #_400_stats, avg(rc500) as #_500_stats by  page_sec" 
+        preview=True cache=500 status_buckets=300 %}
+    {% searchmanager id="trx-search" search="index=gomez earliest=-40d sourcetype=gomez:page:api |  fields desc mid | dedup desc | fields mid desc"
+    preview=False cache=True %}
+{% endblock managers %}
+
+{% block js %} 
+{{ block.super }}   
+<script>
+    require([ 
+        "splunkjs/ready!", 
+        "jquery",
+        "splunk_wftoolkit/components/sankey/sankey",
+    ], 
+    function(mvc, $, Sankey) {
+        var sankey = new Sankey({
+            'id' : 'page2status',
+            'managerid' : 'simplesearch3',
+            'el' : $('#page2status')
+        }).render();
+        s
+    });
+</script>
+<script>
+    var deps = [
+        "splunkjs/ready!",
+        "splunkjs/mvc/chartview"
+    ];
+    require(deps, function(mvc) {
+        var ChartView = require("splunkjs/mvc/chartview");
+
+        // Instantiate components
+        barchart = new ChartView({
+            id: "mybaar",
+            managerid: "simplesearch4",
+            type: "column",
+            "charting.chart.stackMode": "column", // Place complex property names within quotes
+            "charting.legend.placement": "bottom",
+            el: $("#mybaar")
+        }).render();
+
+        // Respond to a click event
+        barchart.on("click:chart", function (e) {
+            e.preventDefault(); // Prevent redirecting to the Search app
+            console.log("Clicked chart: ", e); // Print event info to the console
+        });
+
+    });
+</script>
+<script>
+    require(["splunkjs/ready!"], function(mvc) {
+        var _ = require("underscore");
+        // Fetch a reference to the views and managers
+        var trx = mvc.Components.getInstance("trx-radiogrp");
+        var parrell = mvc.Components.getInstance("trxpage");
+        var defaultNamespace = mvc.Components.getInstance("default"); 
+        
+        // Add "all" choices to
+        trx.on("change", function() {
+            var descString = trx.val()
+            defaultNamespace.set("mid", descString);
+        });
+    });
+</script>
+{% endblock js %}
